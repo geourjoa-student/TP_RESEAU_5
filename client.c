@@ -67,18 +67,10 @@ void viderbuffer()
 /*****************************************************************************/
 void client_appli (char *serveur,char *service,char *protocole)
 {
-	int i;
+	int i,taille_mot;
 	
-	char nb_erreurs;
-	
-  	char c[10]; // test de chiasse
+	char nb_erreurs, lettre, jeu_fini = 0; 
   	
-	int taille_mot; 
-	
-	int jeu_fini=0; // indicateur de jeu fini
-	
-	char Tampon[10]; 
-	
 	struct sockaddr_in p_adr_distant;
 	
 	//Création socket
@@ -110,28 +102,24 @@ void client_appli (char *serveur,char *service,char *protocole)
 	while(!jeu_fini)
 	{
 		printf("Saisissez une lettre : ");
-		scanf("%c",&c[0]);// lit le char
+		scanf("%c",&lettre);
 		
 		viderbuffer();
 		
-		h_writes(socket_local,&c[0],sizeof(char)); // Ecriture de la lettre joué
+		h_writes(socket_local,&lettre,sizeof(char)); // Ecriture de la lettre jouée
 		h_reads(socket_local,mot_trouve,taille_mot); // Lecture de l'état du mot
 		
-		h_reads(socket_local,Tampon,sizeof(char)); // Lecture du nombre d'erreur		
-		nb_erreurs= Tampon[0];
-		
+		h_reads(socket_local,&nb_erreurs,sizeof(char)); // Lecture du nombre d'erreur		
+				
 		printf("Voici le mot actuel : \n");
 		for(i=0;i<taille_mot;i++)
 			printf("%c",mot_trouve[i]);
 		printf("\n Vous avez encore droit a %d erreurs\n",nb_erreurs);
 		
-		h_reads(socket_local,Tampon,sizeof(char)); // rLecture du bouléen d'état fin de partie
-		jeu_fini=Tampon[0];
+		h_reads(socket_local,&jeu_fini,sizeof(char)); // rLecture du bouléen d'état fin de partie
 	}
 	
-
-
-	h_writes(socket_local,Tampon,10);
+	// fermeture connexion
 	h_close(socket_local);
 	
 
