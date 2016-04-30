@@ -67,9 +67,9 @@ void viderbuffer()
 /*****************************************************************************/
 void client_appli (char *serveur,char *service,char *protocole)
 {
-	int i,taille_mot;
+	int i;
 	
-	char nb_erreurs, lettre, jeu_fini = 0; 
+	char nb_erreurs, lettre, jeu_fini = 0,taille_mot; 
   	
 	struct sockaddr_in p_adr_distant;
 	
@@ -82,10 +82,9 @@ void client_appli (char *serveur,char *service,char *protocole)
 	//Connexion au serveur
 	h_connect(socket_local,&p_adr_distant);
 	
-	//h_reads(socket_local,c,sizeof(char)); // recupere la taille du mot
-	//printf("c[0] = %c ",c[0]);
-	//taille_mot= c[0] -'0';
-	taille_mot=5;
+	h_reads(socket_local,&taille_mot,sizeof(char)); // recupere la taille du mot
+
+	//taille_mot=5;
 	printf("taille mot : %d \n",taille_mot);
 	
 	char mot_trouve[taille_mot]; // declaration du tableau du mot_courant
@@ -101,10 +100,13 @@ void client_appli (char *serveur,char *service,char *protocole)
 
 	while(!jeu_fini)
 	{
-		printf("Saisissez une lettre : ");
-		scanf("%c",&lettre);
+		do {
+			printf("Saisissez une lettre minuscule: ");
+			scanf("%c",&lettre);
+			viderbuffer();	
+		} while ( lettre > 'z' || lettre < 'a');
 		
-		viderbuffer();
+		
 		
 		h_writes(socket_local,&lettre,sizeof(char)); // Ecriture de la lettre jouée
 		h_reads(socket_local,mot_trouve,taille_mot); // Lecture de l'état du mot
@@ -116,14 +118,19 @@ void client_appli (char *serveur,char *service,char *protocole)
 			printf("%c",mot_trouve[i]);
 		printf("\n Vous avez encore droit a %d erreurs\n",nb_erreurs);
 		
-		h_reads(socket_local,&jeu_fini,sizeof(char)); // rLecture du bouléen d'état fin de partie
+		h_reads(socket_local,&jeu_fini,sizeof(char)); // Lecture du bouléen d'état fin de partie
 	}
 	
+	if(nb_erreurs > 0)		
+		printf("Vous avez gagne.\n");
+	else		
+		printf("Vous avez perdu.\n");
+
 	// fermeture connexion
 	h_close(socket_local);
 	
 
  }
-
+	
 /*****************************************************************************/
 

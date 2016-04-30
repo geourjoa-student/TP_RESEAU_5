@@ -64,17 +64,17 @@ main(int argc,char *argv[])
 	serveur_appli(service, protocole);
 }
 // renvoie 1 si la partie est fini , 0 sinon
-int fin_partie(char *mot, int taille_mot,int nb_erreur)
+char fin_partie(char *mot, int taille_mot,int nb_erreur)
 {
 	if (nb_erreur ==0)
 		return 1;
 	int i =0;
 	for (i =0;i<taille_mot;i++)
 	{
-		if (mot[i]=='_')
+		if (mot[i]<'a' || mot[i] >'z')
 			return 0;
 	}
-	// si on arrive ici, la partie est finie
+	
 	return 1;
 }
 // verifie si le char c a déja été joué ou non
@@ -100,7 +100,7 @@ int est_lettre_mot (char *mot ,int taille_mot, char c)
 		if (mot[i]==c)
 			return 1;
 	}
-	// si on arrive ici, on n'a pas trouvé le char c dans le mot
+	
 	return 0;
 }
 void apparaitre_lettre_mot(char *mot, char *mot_trouve, int taille_mot, char c)
@@ -113,12 +113,12 @@ void apparaitre_lettre_mot(char *mot, char *mot_trouve, int taille_mot, char c)
 	}
 }
 // init le tableau en parametre avec la valeur value
-void init(char *mot_trouve , int taille_mot, char value)
+void init(char *mot , int taille_mot, char value)
 {
 	int i;
 	for (i=0;i<taille_mot;i++)
 	{
-		mot_trouve[i]=value;
+		mot[i]=value;
 	}
 }
 void init_l(int *lettre , int taille_mot, int value)
@@ -131,29 +131,23 @@ void init_l(int *lettre , int taille_mot, int value)
 }
 /******************************************************************************/	
 void serveur_appli(char *service, char *protocole)
-
-/* Procedure correspondant au traitemnt du serveur de votre application */
-
 {
 	int taille_tampon = 10; // taille du tampon pour communiquer
 	
 	int lettre[26]; // vaut 0 si la lettre n'a pas été joué , lettre[0] correspond au char 'a'...
 	
-	char nb_erreurs = 5; // nombre d'erreurs commises, initialiser a 5 et décrementer a chaque erreur
-	
-	char taille_mot = 5; // taille du mot a trouver, pour l'instant il est entree en dur
-	
+	char nb_coups = 5; 	
+	char taille_mot = 5; // taille du mot a trouver, pour l'instant il est entree en dur	
 	char mot[taille_mot]; // le mot a trouver
-	
-	int tdonne[10];
-	
 	mot[0]='s';
 	mot[1]='a';
 	mot[2]='l';
 	mot[3]='u';
-	mot[4]='t';
+	mot[4]='t';	
+	char mot_trouve[taille_mot]; //le mot connu du joueur
+
 	char *c;
-	char mot_trouve[taille_mot]; //le mot découvert par l'utilisateur, initialiser avec des '_' au début
+	
 	char partie_finie =0; // detecte la fin de partie
 	int nb_requete_max = 1; // nombre de requete max
 	int socket_pendu; // socket permettant de communiquer avec notre client
@@ -162,7 +156,7 @@ void serveur_appli(char *service, char *protocole)
 	struct sockaddr_in p_adr_socket; 
 	struct sockaddr_in p_adr_utilisateur;
 	
-	init(mot_trouve,taille_mot,'_');
+	init(mot_trouve,taille_mot,'.');
 	
 	init_l(lettre,26,0);
 	
@@ -175,50 +169,34 @@ void serveur_appli(char *service, char *protocole)
 	h_listen(socket,nb_requete_max); // attente d'une connection
 	socket_pendu=h_accept(socket,&p_adr_utilisateur); // accepte la connection
 	
-	//h_reads(socket_pendu,tampon,10);
-	//printf("affichage de test : %c \n",tampon[0]);
-	
-	//sprintf(c,"%d",taille_mot);//c[0] == taille_mot
-	//h_writes(socket_pendu,c,sizeof(char)); // envoie la taille du mot au client
+
+	h_writes(socket_pendu,&taille_mot,sizeof(char)); // envoie la taille du mot au client
+
 	while (!partie_finie)
 	{
 		h_reads(socket_pendu,tampon,sizeof(char));// lit le char tappé en entrée
 		printf("test read %c\n",tampon[0]);
-		if(tampon[0]=='\n')
-			NULL;
-		else
+					
+		if(!(verif_lettre(lettre,tampon[0]))) // La lettre n'a pas été donnée
 		{
-			if((tampon[0] <='z' && tampon[0] >='a') || ( tampon[0] <='Z' && tampon[0] >='A'))
-			{
-				if(!(verif_lettre(lettre,tampon[0])))// verifie que le char en entrée n'a pas été donné
-				{
-					printf("verif lettre");
-					maj_lettre(lettre,tampon[0]);
-					if(est_lettre_mot(mot,taille_mot,tampon[0]))// verifie que le char est dans le mot
-					{
-						printf("verif est_lettre");
-						apparaitre_lettre_mot(mot,mot_trouve,taille_mot,tampon[0]); // fait apparaitre ce char dans le mot_trouve
-					}
-					else
-						nb_erreurs --; // la lettre n'est pas dans le mot, FROMAGE
-				}
-				else nb_erreurs --;// cette lettre est a déjà été donné , FROMAGE encore
-			}
+			maj_lettre(lettre,tampon[0]);
+			if(est_lettre_mot(mot,taille_mot,tampon[0]))// La lettre est dans le mot
+				apparaitre_lettre_mot(mot,mot_trouve,taille_mot,tampon[0]); // MAJ de la lettre dans le mot_trouve
+			
 			else
-				nb_erreurs --; // Il faut donner un char en entree ...
+				nb_coups --; 
 		}
-		int i;
-		printf("test mot_trouve serveur : ");
-		for (i=0;i<taille_mot;i++)
-			printf("%c",mot_trouve[i]);
-		partie_finie = fin_partie(mot_trouve,taille_mot,nb_erreurs);
+		else 
+			nb_coups --;
+		
+		
+		partie_finie = fin_partie(mot_trouve,taille_mot,nb_coups);
+
 		h_writes(socket_pendu,mot_trouve,taille_mot);// envoie l'état de mot_trouve actuel
+					
+		h_writes(socket_pendu,&nb_coups,sizeof(char)); // envoie le nombre d'erreurs restantes
 		
-		//sprintf(c,"%d",nb_erreurs);// convertie nb_erreurs en char pour l'envoyé au client
-		
-		h_writes(socket_pendu,&nb_erreurs,sizeof(char)); // envoie le nombre d'erreurs restantes
-		//sprintf(c,"%d",partie_finie); // convertie partie_finie en char pour l'envoyé au client
-		h_writes(socket_pendu,&partie_finie,sizeof(char));	// envoie le bool de fin de partie
+		h_writes(socket_pendu,&partie_finie,sizeof(char));	// notifie l'état de la partie
 	}
 		
 			
