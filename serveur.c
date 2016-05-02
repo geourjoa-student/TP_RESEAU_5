@@ -1,15 +1,3 @@
-/******************************************************************************/
-/*			Application: ....			              */
-/******************************************************************************/
-/*									      */
-/*			 programme  SERVEUR 				      */
-/*									      */
-/******************************************************************************/
-/*									      */
-/*		Auteurs :  ....						      */
-/*		Date :  ....						      */
-/*									      */
-/******************************************************************************/	
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,16 +6,15 @@
 #include<sys/signal.h>
 #include<sys/wait.h>
 
-#include "fon.h"     		/* Primitives de la boite a outils */
+#include "fon.h"     
 
 #define SERVICE_DEFAUT "1111"
-#define PROTOCOLE_DEFAUT "udp"
+#define PROTOCOLE_DEFAUT "tcp"
 
-void serveur_appli (char *service, char* protocole);   /* programme serveur */
+#define TAILLE_TAMPON 10
+#define NB_REQUETE_MAX 1
 
-
-/******************************************************************************/	
-/*---------------- programme serveur ------------------------------*/
+void serveur_appli (char *service, char* protocole);   
 
 main(int argc,char *argv[])
 {
@@ -53,13 +40,10 @@ main(int argc,char *argv[])
 		  break;
 
    	default :
-		  printf("Usage:serveur service (nom ou port) protocole (TCP ou UDP)\n");
+		  printf("Usage:\n> serveur service protocole\n");
 		  return EXIT_SUCCESS;
  	}
 
-	/* service est le service (ou numŽro de port) auquel sera affectŽ
-	ce serveur*/
-	/* protocole est le protocole qui sera utilisŽ */
 	
 	serveur_appli(service, protocole);
 }
@@ -112,7 +96,7 @@ void apparaitre_lettre_mot(char *mot, char *mot_trouve, int taille_mot, char c)
 			mot_trouve[i]=c;
 	}
 }
-// init le tableau en parametre avec la valeur value
+
 void init(char *mot , int taille_mot, char value)
 {
 	int i;
@@ -132,42 +116,32 @@ void init_l(int *lettre , int taille_mot, int value)
 /******************************************************************************/	
 void serveur_appli(char *service, char *protocole)
 {
-	int taille_tampon = 10; // taille du tampon pour communiquer
+	int lettres[26]; // lettres[i] vaut 0 si la ieme lettre n'a pas été jouée
 	
-	int lettre[26]; // vaut 0 si la lettre n'a pas été joué , lettre[0] correspond au char 'a'...
+	char nb_coups = 5, taille_mot=7 , mot[]="reseaux", mot_trouve[taille_mot], partie_finie = 0,tampon[TAILLE_TAMPON];
 	
-	char nb_coups = 5; 	
-	char taille_mot = 5; // taille du mot a trouver, pour l'instant il est entree en dur	
-	char mot[taille_mot]; // le mot a trouver
-	mot[0]='s';
-	mot[1]='a';
-	mot[2]='l';
-	mot[3]='u';
-	mot[4]='t';	
-	char mot_trouve[taille_mot]; //le mot connu du joueur
-
-	char *c;
-	
-	char partie_finie =0; // detecte la fin de partie
-	int nb_requete_max = 1; // nombre de requete max
-	int socket_pendu; // socket permettant de communiquer avec notre client
-	char tampon[taille_tampon]; // permet de récupérer les entrées du client
-	
+	int socket_pendu; 
+		
 	struct sockaddr_in p_adr_socket; 
 	struct sockaddr_in p_adr_utilisateur;
 	
 	init(mot_trouve,taille_mot,'.');
 	
-	init_l(lettre,26,0);
+	init_l(lettres,26,0);
 	
-	int socket= h_socket(AF_INET,SOCK_STREAM); // mettre AF_INET apres cree la socket
+	// Création socket
+	int socket= h_socket(AF_INET,SOCK_STREAM); 
 
-	adr_socket(service,"localhost",protocole,&p_adr_socket); //affecte p_adr_socket
+	adr_socket(service,"localhost",protocole,&p_adr_socket); 
 	
-	h_bind (socket,&p_adr_socket); // bind la socket
+	// Association de la socket
+	h_bind (socket,&p_adr_socket); 
 	
-	h_listen(socket,nb_requete_max); // attente d'une connection
-	socket_pendu=h_accept(socket,&p_adr_utilisateur); // accepte la connection
+	//Mise en écoute de la socket
+	h_listen(socket,NB_REQUETE_MAX); // 
+	
+	//Acceptation de connexion
+	socket_pendu=h_accept(socket,&p_adr_utilisateur); 
 	
 
 	h_writes(socket_pendu,&taille_mot,sizeof(char)); // envoie la taille du mot au client
@@ -175,11 +149,10 @@ void serveur_appli(char *service, char *protocole)
 	while (!partie_finie)
 	{
 		h_reads(socket_pendu,tampon,sizeof(char));// lit le char tappé en entrée
-		printf("test read %c\n",tampon[0]);
-					
-		if(!(verif_lettre(lettre,tampon[0]))) // La lettre n'a pas été donnée
+						
+		if(!(verif_lettre(lettres,tampon[0]))) // La lettre n'a pas été donnée
 		{
-			maj_lettre(lettre,tampon[0]);
+			maj_lettre(lettres,tampon[0]);
 			if(est_lettre_mot(mot,taille_mot,tampon[0]))// La lettre est dans le mot
 				apparaitre_lettre_mot(mot,mot_trouve,taille_mot,tampon[0]); // MAJ de la lettre dans le mot_trouve
 			

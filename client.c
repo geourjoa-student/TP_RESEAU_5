@@ -6,7 +6,7 @@
 #include "fon.h"   		
 
 #define SERVICE_DEFAUT "1111"
-#define PROTOCOLE_DEFAUT "udp"
+#define PROTOCOLE_DEFAUT "tcp"
 #define SERVEUR_DEFAUT "localhost"
 
 void client_appli (char *serveur, char *service, char *protocole);
@@ -84,7 +84,6 @@ void client_appli (char *serveur,char *service,char *protocole)
 	
 	h_reads(socket_local,&taille_mot,sizeof(char)); // recupere la taille du mot
 
-	//taille_mot=5;
 	printf("taille mot : %d \n",taille_mot);
 	
 	char mot_trouve[taille_mot]; // declaration du tableau du mot_courant
