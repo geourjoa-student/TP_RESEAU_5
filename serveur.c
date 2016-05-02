@@ -121,6 +121,8 @@ void serveur_appli(char *service, char *protocole)
 	char nb_coups = 5, taille_mot=7 , mot[]="reseaux", mot_trouve[taille_mot], partie_finie = 0,tampon[TAILLE_TAMPON];
 	
 	int socket_pendu; 
+
+	pid_t pid; 
 		
 	struct sockaddr_in p_adr_socket; 
 	struct sockaddr_in p_adr_utilisateur;
@@ -140,41 +142,73 @@ void serveur_appli(char *service, char *protocole)
 	//Mise en écoute de la socket
 	h_listen(socket,NB_REQUETE_MAX); // 
 	
-	//Acceptation de connexion
-	socket_pendu=h_accept(socket,&p_adr_utilisateur); 
-	
 
-	h_writes(socket_pendu,&taille_mot,sizeof(char)); // envoie la taille du mot au client
+	//Boucle infini du serveur	
+	while(1){
 
-	while (!partie_finie)
-	{
-		h_reads(socket_pendu,tampon,sizeof(char));// lit le char tappé en entrée
+
+		//Acceptation de connexion
+		socket_pendu=h_accept(socket,&p_adr_utilisateur); 
+
+		if ((pid = fork())<0){ 
+			fprintf (stderr,"Il y a une erreur \n"); 
+			exit(EXIT_FAILURE); 
+		} 
+		else {
+			if (pid == 0){ 
+				//Fils
+
+		
+				h_close(socket);
+
+
+				h_writes(socket_pendu,&taille_mot,sizeof(char)); // envoie la taille du mot au client
+
+				while (!partie_finie)
+				{
+					h_reads(socket_pendu,tampon,sizeof(char));// lit le char tappé en entrée
 						
-		if(!(verif_lettre(lettres,tampon[0]))) // La lettre n'a pas été donnée
-		{
-			maj_lettre(lettres,tampon[0]);
-			if(est_lettre_mot(mot,taille_mot,tampon[0]))// La lettre est dans le mot
-				apparaitre_lettre_mot(mot,mot_trouve,taille_mot,tampon[0]); // MAJ de la lettre dans le mot_trouve
+					if(!(verif_lettre(lettres,tampon[0]))) // La lettre n'a pas été donnée
+					{
+						maj_lettre(lettres,tampon[0]);
+						if(est_lettre_mot(mot,taille_mot,tampon[0]))// La lettre est dans le mot
+							apparaitre_lettre_mot(mot,mot_trouve,taille_mot,tampon[0]); // MAJ de la lettre dans le mot_trouve
 			
-			else
-				nb_coups --; 
-		}
-		else 
-			nb_coups --;
+						else
+							nb_coups --; 
+					}
+					else 
+						nb_coups --;
 		
 		
-		partie_finie = fin_partie(mot_trouve,taille_mot,nb_coups);
+					partie_finie = fin_partie(mot_trouve,taille_mot,nb_coups);
 
-		h_writes(socket_pendu,mot_trouve,taille_mot);// envoie l'état de mot_trouve actuel
+					h_writes(socket_pendu,mot_trouve,taille_mot);// envoie l'état de mot_trouve actuel
 					
-		h_writes(socket_pendu,&nb_coups,sizeof(char)); // envoie le nombre d'erreurs restantes
+					h_writes(socket_pendu,&nb_coups,sizeof(char)); // envoie le nombre d'erreurs restantes
 		
-		h_writes(socket_pendu,&partie_finie,sizeof(char));	// notifie l'état de la partie
-	}
-		
+					h_writes(socket_pendu,&partie_finie,sizeof(char));	// notifie l'état de la partie
+				}
 			
-	h_close(socket_pendu);
-	h_close(socket);
+
+
+				h_close(socket_pendu);
+
+				exit(EXIT_SUCCESS); 
+			} else {
+				//Pere
+
+				h_close(socket_pendu);
+			
+			}
+		}
+
+	}
+
+	
+			
+	
+	
 }
 
 /******************************************************************************/	
