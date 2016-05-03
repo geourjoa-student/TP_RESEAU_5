@@ -14,6 +14,7 @@
 #define TAILLE_TAMPON 10
 #define NB_REQUETE_MAX 1
 
+
 void serveur_appli (char *service, char* protocole);   
 
 main(int argc,char *argv[])
@@ -28,19 +29,13 @@ main(int argc,char *argv[])
  	{
    	case 1:
 		  printf("defaut service = %s\n", service);
-		  printf("defaut protocole = %s\n", protocole);
 		  break;
  	case 2:
 		  service=argv[1];
-		  printf("defaut protocole = %s\n", protocole);
-		  break;
- 	case 3 :
-		  service=argv[1];
-		  protocole=argv[2];
 		  break;
 
    	default :
-		  printf("Usage:\n> serveur service protocole\n");
+		  printf("Usage:\n> ./serveur service \n");
 		  return EXIT_SUCCESS;
  	}
 
@@ -65,8 +60,7 @@ char fin_partie(char *mot, int taille_mot,int nb_erreur)
 int verif_lettre(int *lettre, char c)
 {
 	int i;
-	i = c - 'a'; // a check
-	printf("i = %d",i);
+	i = c - 'a'; 
 	return lettre[i];
 }
 void maj_lettre(int *lettre, char c)
@@ -197,7 +191,7 @@ void serveur_appli(char *service, char *protocole)
 				exit(EXIT_SUCCESS); 
 			} else {
 				//Pere
-
+				printf("Connexion d'un client.\n");
 				h_close(socket_pendu);
 			
 			}
